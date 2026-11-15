@@ -34,10 +34,10 @@ FILEMOON_API_KEY = os.getenv("FILEMOON_API_KEY", "166670chgr2qacpij1f2gx")
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_name = update.effective_user.first_name
   welcome_message = (
-      f"హాయ్ {user_name}! 👋\n\n"
+      f"Hi {user_name}! 👋\n\n"
       "Nenu FileMoon Uploader Bot ni. 🚀\n"
-      "📥 ఏ file అయినా forward చేయండి, FileMoon ki upload చేసి Watch & Embed links ఇస్తాను.\n"
-      "📋 Mee files list chudadaniki & delete cheyadaniki `/files` ani type cheyandi!"
+      "📥 Enti file aina forward cheyyi, FileMoon ki upload chesi Watch & Embed links isthanu.\n"
+      "📋 Mee files list chudadaniki & delete cheyadaniki `/files` ani type chey!"
   )
   await update.message.reply_text(welcome_message, parse_mode="Markdown")
 
@@ -85,12 +85,12 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
   if not file:
     await message.reply_text(
-        "Dayachesi oka valid file/video forward cheyyandi."
+        "Dayachesi oka valid file or video forward cheyyi anna."
     )
     return
 
   status_message = await message.reply_text(
-      "📥 File download avtundi, konchem apandi..."
+      "📥 File download avthundi, konchem agu..."
   )
 
   new_file = await context.bot.get_file(file.file_id)
@@ -99,7 +99,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
   await new_file.download_to_drive(local_path)
 
   await status_message.edit_text(
-      "🚀 FileMoon ki upload avtundi, wait cheyyandi..."
+      "🚀 FileMoon ki upload avthundi, wait cheyyi..."
   )
 
   result = upload_to_filemoon(local_path)
@@ -128,7 +128,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
   else:
     await status_message.edit_text(
-        "❌ FileMoon upload fail ayyindi. API Key limits check chesukondi."
+        "❌ FileMoon upload fail ayyindi. API key limits check chesukondi."
     )
 
 
@@ -141,7 +141,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     files = res.get("result", {}).get("files", [])
 
     if not files:
-      await update.message.reply_text("📁 Mee account lo evvi files levu.")
+      await update.message.reply_text("📁 Mee account lo evvi files levu anna.")
       return
 
     await update.message.reply_text("📋 Mee FileMoon files list:")
@@ -179,7 +179,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if del_res.get("status") == 200:
       await query.edit_message_text(
-          "🗑 **File successfully delete ayyindi!**", parse_mode="Markdown"
+          "🗑 **File successfully delete aipoindi!**", parse_mode="Markdown"
       )
     else:
       await query.edit_message_text("❌ Delete avvatam lo error vachindi.")
@@ -202,7 +202,7 @@ def main():
   )
   app.add_handler(CallbackQueryHandler(button_handler))
 
-  print("🤖 Telegram Bot with Flask & Delete feature is running...")
+  print("🤖 Telegram Bot with Flask & Tanglish messages is running...")
   app.run_polling()
 
 
