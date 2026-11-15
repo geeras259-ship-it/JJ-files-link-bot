@@ -1,4 +1,6 @@
 import os
+from threading import Thread
+from flask import Flask
 import requests
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -10,12 +12,24 @@ from telegram.ext import (
     filters,
 )
 
-# Configurations (Render environment variables nundi read chesthundi)
+# --- 1. Dummy Flask Server (Render port requirement kosam) ---
+app_flask = Flask("")
+
+
+@app_flask.route("/")
+def home():
+  return "Bot is alive and running!"
+
+
+def run_flask():
+  app_flask.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+
+# --- 2. Telegram Bot Configurations ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 FILEMOON_API_KEY = os.getenv("FILEMOON_API_KEY", "166670chgr2qacpij1f2gx")
 
 
-# 1. /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_name = update.effective_user.first_name
   welcome_message = (
@@ -27,7 +41,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   await update.message.reply_text(welcome_message, parse_mode="Markdown")
 
 
-# 2. FileMoon Upload Function
 def upload_to_filemoon(file_path):
   try:
     server_res = requests.get(
@@ -56,7 +69,6 @@ def upload_to_filemoon(file_path):
   return None
 
 
-# 3. Handle File Uploads
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
   message = update.message
   file = (
@@ -98,7 +110,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔗 **Watch Link:** {result['watch']}\n"
         f"💻 **Embed Link:** `<iframe src=\"{result['embed']}\" width=\"640\" height=\"360\" frameborder=\"0\" allowfullscreen></iframe>`"
     )
-    # Direct ga upload kinda delete button ivvadaniki
     keyboard = [[
         InlineKeyboardButton(
             "🗑 Delete File", callback_data=f"del_{result['code']}"
@@ -118,7 +129,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# 4. /files command - List files from FileMoon account
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
   try:
     res = requests.get(
@@ -132,7 +142,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("📋 Mee FileMoon files list:")
 
-    for f in files[:10]:  # Last 10 files chupinchadaniki
+    for f in files[:10]:
       title = f.get("title", "Unknown File")
       code = f.get("file_code")
       watch_link = f"https://filemoon.sx/{code}"
@@ -150,7 +160,6 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"❌ Error fetching files: {e}")
 
 
-# 5. Button Click Handler (For Deletion)
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
   query = update.callback_query
   await query.answer()
@@ -159,7 +168,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
   if data.startswith("del_"):
     file_code = data.split("_")[1]
 
-    # FileMoon Delete API call
     del_res = requests.get(
         f"https://filemoon.sx/api/file/delete?key={FILEMOON_API_KEY}&file_code={file_code}"
     ).json()
@@ -173,6 +181,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+  # Start Flask server in a background thread (so Render port scan pass avtundi)
+  t = Thread(target=run_flask)
+  t.start()
+
+  # Start Telegram Bot
   app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
   app.add_handler(CommandHandler("start", start))
@@ -184,7 +197,7 @@ def main():
   )
   app.add_handler(CallbackQueryHandler(button_handler))
 
-  print("🤖 Telegram Bot with Delete feature is running...")
+  print("🤖 Telegram Bot with Flask web server is running...")
   app.run_polling()
 
 
