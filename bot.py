@@ -71,17 +71,22 @@ def upload_to_filemoon(file_path):
   return None
 
 
-# 5. Handle File Uploads
+# 5. Handle File Uploads (Fixed to catch all documents, videos, and forwards)
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
   message = update.message
-  file = (
-      message.document
-      or message.video
-      or message.audio
-      or message.photo[-1]
-      if message.photo
-      else None
-  )
+
+  # Prathi rakamaina file / video / document ni detect cheyyadaniki check
+  file = None
+  if message.document:
+    file = message.document
+  elif message.video:
+    file = message.video
+  elif message.audio:
+    file = message.audio
+  elif message.animation:
+    file = message.animation
+  elif message.photo:
+    file = message.photo[-1]  # Highest quality photo
 
   if not file:
     await message.reply_text(
@@ -195,14 +200,22 @@ def main():
 
   app.add_handler(CommandHandler("start", start))
   app.add_handler(CommandHandler("files", list_files))
+
+  # Updated filters to catch ANY media, document, video, audio or forwarded files
   app.add_handler(
       MessageHandler(
-          filters.Document.ALL | filters.VIDEO | filters.AUDIO, handle_file
+          filters.Document.ALL
+          | filters.VIDEO
+          | filters.AUDIO
+          | filters.ANIMATION
+          | filters.PHOTO,
+          handle_file,
       )
   )
+
   app.add_handler(CallbackQueryHandler(button_handler))
 
-  print("🤖 Telegram Bot with Flask & Tanglish messages is running...")
+  print("🤖 Telegram Bot with fixed file filters is running...")
   app.run_polling()
 
 
