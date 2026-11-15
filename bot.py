@@ -71,22 +71,18 @@ def upload_to_filemoon(file_path):
   return None
 
 
-# 5. Handle File Uploads (Fixed to catch all documents, videos, and forwards)
+# 5. Handle File Uploads (Ultra strong file catcher for forwarded files)
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
   message = update.message
 
-  # Prathi rakamaina file / video / document ni detect cheyyadaniki check
-  file = None
-  if message.document:
-    file = message.document
-  elif message.video:
-    file = message.video
-  elif message.audio:
-    file = message.audio
-  elif message.animation:
-    file = message.animation
-  elif message.photo:
-    file = message.photo[-1]  # Highest quality photo
+  # Forwarded messages or regular messages lo unna file ni extract cheyyadam
+  file = (
+      message.document
+      or message.video
+      or message.audio
+      or message.animation
+      or (message.photo[-1] if message.photo else None)
+  )
 
   if not file:
     await message.reply_text(
@@ -98,43 +94,46 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
       "📥 File download avthundi, konchem agu..."
   )
 
-  new_file = await context.bot.get_file(file.file_id)
-  local_path = f"downloads/{file.file_id}"
-  os.makedirs("downloads", exist_ok=True)
-  await new_file.download_to_drive(local_path)
-
-  await status_message.edit_text(
-      "🚀 FileMoon ki upload avthundi, wait cheyyi..."
-  )
-
-  result = upload_to_filemoon(local_path)
-
-  if os.path.exists(local_path):
-    os.remove(local_path)
-
-  if result:
-    response_text = (
-        f"✅ **Upload Successful!**\n\n"
-        f"🔗 **Watch Link:** {result['watch']}\n"
-        f"💻 **Embed Link:** `<iframe src=\"{result['embed']}\" width=\"640\" height=\"360\" frameborder=\"0\" allowfullscreen></iframe>`"
-    )
-    keyboard = [[
-        InlineKeyboardButton(
-            "🗑 Delete File", callback_data=f"del_{result['code']}"
-        )
-    ]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+  try:
+    new_file = await context.bot.get_file(file.file_id)
+    local_path = f"downloads/{file.file_id}"
+    os.makedirs("downloads", exist_ok=True)
+    await new_file.download_to_drive(local_path)
 
     await status_message.edit_text(
-        response_text,
-        parse_mode="Markdown",
-        disable_web_page_preview=True,
-        reply_markup=reply_markup,
+        "🚀 FileMoon ki upload avthundi, wait cheyyi..."
     )
-  else:
-    await status_message.edit_text(
-        "❌ FileMoon upload fail ayyindi. API key limits check chesukondi."
-    )
+
+    result = upload_to_filemoon(local_path)
+
+    if os.path.exists(local_path):
+      os.remove(local_path)
+
+    if result:
+      response_text = (
+          f"✅ **Upload Successful!**\n\n"
+          f"🔗 **Watch Link:** {result['watch']}\n"
+          f"💻 **Embed Link:** `<iframe src=\"{result['embed']}\" width=\"640\" height=\"360\" frameborder=\"0\" allowfullscreen></iframe>`"
+      )
+      keyboard = [[
+          InlineKeyboardButton(
+              "🗑 Delete File", callback_data=f"del_{result['code']}"
+          )
+      ]]
+      reply_markup = InlineKeyboardMarkup(keyboard)
+
+      await status_message.edit_text(
+          response_text,
+          parse_mode="Markdown",
+          disable_web_page_preview=True,
+          reply_markup=reply_markup,
+      )
+    else:
+      await status_message.edit_text(
+          "❌ FileMoon upload fail ayyindi. API key limits check chesukondi."
+      )
+  except Exception as e:
+    await status_message.edit_text(f"❌ Error vachindi: {str(e)}")
 
 
 # 6. /files command - List files from FileMoon account
@@ -201,21 +200,22 @@ def main():
   app.add_handler(CommandHandler("start", start))
   app.add_handler(CommandHandler("files", list_files))
 
-  # Updated filters to catch ANY media, document, video, audio or forwarded files
+  # Catch ANY type of message that contains files/media/documents including forwards
   app.add_handler(
       MessageHandler(
-          filters.Document.ALL
+          filters.ATTACHMENT
           | filters.VIDEO
           | filters.AUDIO
           | filters.ANIMATION
-          | filters.PHOTO,
+          | filters.PHOTO
+          | filters.FORWARDED,
           handle_file,
       )
   )
 
   app.add_handler(CallbackQueryHandler(button_handler))
 
-  print("🤖 Telegram Bot with fixed file filters is running...")
+  print("🤖 Telegram Bot is running smoothly...")
   app.run_polling()
 
 
