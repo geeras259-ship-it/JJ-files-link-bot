@@ -30,6 +30,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 FILEMOON_API_KEY = os.getenv("FILEMOON_API_KEY", "166670chgr2qacpij1f2gx")
 
 
+# 3. /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_name = update.effective_user.first_name
   welcome_message = (
@@ -41,6 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   await update.message.reply_text(welcome_message, parse_mode="Markdown")
 
 
+# 4. FileMoon Upload Function
 def upload_to_filemoon(file_path):
   try:
     server_res = requests.get(
@@ -69,6 +71,7 @@ def upload_to_filemoon(file_path):
   return None
 
 
+# 5. Handle File Uploads
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
   message = update.message
   file = (
@@ -129,6 +132,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# 6. /files command - List files from FileMoon account
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
   try:
     res = requests.get(
@@ -160,6 +164,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"❌ Error fetching files: {e}")
 
 
+# 7. Button Click Handler (For Deletion)
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
   query = update.callback_query
   await query.answer()
@@ -181,7 +186,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
-  # Start Flask server in a background thread (so Render port scan pass avtundi)
+  # Start Flask server in background thread for Render port binding
   t = Thread(target=run_flask)
   t.start()
 
@@ -197,7 +202,7 @@ def main():
   )
   app.add_handler(CallbackQueryHandler(button_handler))
 
-  print("🤖 Telegram Bot with Flask web server is running...")
+  print("🤖 Telegram Bot with Flask & Delete feature is running...")
   app.run_polling()
 
 
